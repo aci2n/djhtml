@@ -189,6 +189,8 @@ class DjTXT(BaseMode):
     RAW_TOKENS = [
         r"\n",
         r"{%[-+]?.*?[-+]?%}",
+        r"{# fmt:js #}",
+        r"{# fmt:css #}",
         r"{#",
         r"{{.*?}}",
     ]
@@ -228,6 +230,8 @@ class DjTXT(BaseMode):
                 token = Token.CloseAndOpen(raw_token, mode=DjTXT, **self.offsets)
             else:
                 token = Token.Text(raw_token, mode=DjTXT, **self.offsets)
+        elif format_directive := FormatDirective.get_directive(raw_token, self):
+            token, mode = format_directive
         elif raw_token == "{#":
             token, mode = Token.Open(raw_token, mode=DjTXT, ignore=True), Comment(
                 "{# fmt:on #}", mode=DjTXT, return_mode=self
@@ -584,6 +588,58 @@ class InsideHTMLTag(DjTXT):
         else:
             token, mode = super().create_token(raw_token, src, line)
 
+        return token, mode
+
+
+class FormatDirective(BaseMode):
+    """
+    A format directive explicitly declares the indentation mode for a block.
+
+    """
+
+    DIRECTIVE_DEFS = [
+        ("{# fmt:js #}", "{# fmt:endjs #}", DjJS, ["</script>"]),
+        ("{# fmt:css #}", "{# fmt:endcss #}", DjCSS, ["</style>"]),
+    ]
+
+    @staticmethod
+    def get_directive(raw_token, return_mode):
+        for (
+            start_token,
+            end_token,
+            mode_class,
+            intercepted_tokens,
+        ) in FormatDirective.DIRECTIVE_DEFS:
+            if raw_token == start_token:
+                return (
+                    Token.Text(raw_token, mode=FormatDirective),
+                    FormatDirective(
+                        mode_class, end_token, intercepted_tokens, return_mode
+                    ),
+                )
+        return None
+
+    def __init__(self, mode_class, end_token, intercepted_tokens, return_mode):
+        self.RAW_TOKENS = [
+            end_token,
+            *intercepted_tokens,
+            *getattr(mode_class, "RAW_TOKENS", []),
+        ]
+        super().__init__(None, return_mode)
+        self.end_token = end_token
+        self.inner_mode = mode_class(return_mode=self)
+        self.intercepted_tokens = intercepted_tokens
+
+    def create_token(self, raw_token, src, line):
+        if raw_token == self.end_token:
+            return Token.Text(raw_token, mode=FormatDirective), self.return_mode
+        if raw_token in self.intercepted_tokens:
+            return Token.Text(raw_token, mode=FormatDirective), self
+        token, mode = self.inner_mode.create_token(raw_token, src, line)
+        if mode is self or mode is self.inner_mode:
+            return token, self
+        if mode.return_mode is self.inner_mode:
+            mode.return_mode = self
         return token, mode
 
 

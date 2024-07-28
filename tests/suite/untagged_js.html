@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+<main>
+    This template uses some controversial js importing techniques.
+</main>
+
+{# fmt:off #}
+const doNotFormatMe = [
+'one',
+  'two',
+]
+{# fmt:on #}
+
+{% block included_js %}
+    {# fmt:js #}
+ // the script tag for this block is defined in "base.html"
+    array = [
+        1,
+        2,
+        3,
+    ]
+    dictionary = {
+        value1: 1,
+        value2: 2,
+        value3: 3,
+    }
+    function_call(
+        arg1,
+        arg2,
+        arg3,
+    )
+    {# fmt:endjs #}
+{% endblock %}
+
+<script>
+    console.log('this is a regular script');
+</script>

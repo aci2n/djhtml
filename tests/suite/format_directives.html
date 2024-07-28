@@ -1,0 +1,47 @@
+{# fmt:js #}
+a = 1;
+b = 2;
+if (true) {
+    console.log('hi');
+}
+{# fmt:css #}
+.the_class {
+    color: red;
+}
+{# fmt:endcss #}
+c = 3;
+c = 6;
+if (0) {
+    {# fmt:js #}
+    d = 10;
+    if (1) {
+        {# fmt:css #}
+        .the_class {
+            color: red;
+            nested_element {
+                {# fmt:js #}
+                function test() {
+                    console.log('hi');
+                }
+                {# fmt:endjs #}
+                color: black;
+{# testing what happens here #}
+                </style>
+                </script>
+                </script>
+            }
+        }
+        {# fmt:endcss #}
+        if (2) {
+            if(3) {
+                {# fmt:js #}
+                console.log('hi');
+                {# fmt:endjs #}
+            }
+        }
+        </script>
+        </script>
+    }
+    {# fmt:endjs #}
+}
+{# fmt:endjs #}
